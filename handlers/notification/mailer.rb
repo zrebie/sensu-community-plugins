@@ -35,10 +35,10 @@ end
 
 class Mailer < Sensu::Handler
   option :json_config,
-         description: 'Config Name',
-         short: '-j JsonConfig',
-         long: '--json_config JsonConfig',
-         required: false
+         :description => 'Config Name',
+         :short => '-j JsonConfig',
+         :long => '--json_config JsonConfig',
+         :required => false
 
   def short_name
     @event['client']['name'] + '/' + @event['check']['name']
@@ -80,6 +80,7 @@ class Mailer < Sensu::Handler
     mail_to = build_mail_to_list
     mail_from =  settings[json_config]['mail_from']
     reply_to = settings[json_config]['reply_to'] || mail_from
+    cc_to = settings[json_config]['cc_to'] || nil
 
     delivery_method = settings[json_config]['delivery_method'] || 'smtp'
     smtp_address = settings[json_config]['smtp_address'] || 'localhost'
@@ -112,18 +113,18 @@ class Mailer < Sensu::Handler
 
     Mail.defaults do
       delivery_options = {
-        address: smtp_address,
-        port: smtp_port,
-        domain: smtp_domain,
-        openssl_verify_mode: 'none',
-        enable_starttls_auto: smtp_enable_starttls_auto
+        :address => smtp_address,
+        :port => smtp_port,
+        :domain => smtp_domain,
+        :openssl_verify_mode => 'none',
+        :enable_starttls_auto => smtp_enable_starttls_auto
       }
 
       unless smtp_username.nil?
         auth_options = {
-          user_name: smtp_username,
-          password: smtp_password,
-          authentication: smtp_authentication
+          :user_name => smtp_username,
+          :password => smtp_password,
+          :authentication => smtp_authentication
         }
         delivery_options.merge! auth_options
       end
@@ -135,13 +136,14 @@ class Mailer < Sensu::Handler
       timeout 10 do
         Mail.deliver do
           to mail_to
+          cc cc_to
           from mail_from
           reply_to reply_to
           subject subject
           body body
         end
 
-        puts 'mail -- sent alert for ' + short_name + ' to ' + mail_to.to_s
+        puts 'mail -- sent alert for ' + short_name + ' to ' + mail_to.to_s + ' cc to ' + cc_to.to_s
       end
     rescue Timeout::Error
       puts 'mail -- timed out while attempting to ' + @event['action'] + ' an incident -- ' + short_name
